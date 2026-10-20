@@ -2,16 +2,18 @@ import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
 import Sidebar from '../components/Sidebar'
 import { Outlet } from 'react-router-dom'
-import { CreateOrganization, SignIn, useAuth, useUser, useOrganization } from '@clerk/clerk-react'
+import { CreateOrganization, SignIn, useAuth, useUser, useOrganization, useOrganizationList } from '@clerk/clerk-react'
 import { useDispatch, useSelector } from 'react-redux'
 import { fetchWorkspaces } from '../features/workspaceSlice'
 import { loadTheme } from '../features/themeSlice'
 import { Loader2Icon } from 'lucide-react'
+import DemoSignIn from '../components/DemoSignIn'
 
 const Layout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const { user, isLoaded } = useUser()
-    const { organization } = useOrganization()
+    const { organization, isLoaded: isOrgLoaded } = useOrganization()
+    const { userMemberships, setActive, isLoaded: isListLoaded } = useOrganizationList({ userMemberships: true })
     const { loading } = useSelector((state) => state.workspace)
     const { getToken } = useAuth()
     const dispatch = useDispatch()
@@ -28,10 +30,36 @@ const Layout = () => {
         }
     }, [isLoaded, user, organization?.id])
 
+    // Signed in and already in a workspace, but none is active (e.g. a fresh sign-in): open the first one
+    // instead of asking the user to create a new workspace.
+    const firstOrgId = userMemberships?.data?.[0]?.organization?.id
+    useEffect(() => {
+        if (user && isOrgLoaded && !organization && firstOrgId) {
+            setActive({ organization: firstOrgId })
+        }
+    }, [user, isOrgLoaded, organization, firstOrgId, setActive])
+
+    if (!isLoaded) {
+        return (
+            <div className='flex items-center justify-center h-screen bg-white dark:bg-zinc-950'>
+                <Loader2Icon className="size-7 text-blue-500 animate-spin" />
+            </div>
+        )
+    }
+
     if (!user) {
         return (
-            <div className="flex justify-center items-center h-screen bg-white dark:bg-zinc-950">
+            <div className="min-h-screen flex flex-col lg:flex-row justify-center items-center gap-8 p-6 bg-white dark:bg-zinc-950">
+                <DemoSignIn />
                 <SignIn />
+            </div>
+        )
+    }
+
+    if (!organization && (!isOrgLoaded || !isListLoaded || firstOrgId)) {
+        return (
+            <div className='flex items-center justify-center h-screen bg-white dark:bg-zinc-950'>
+                <Loader2Icon className="size-7 text-blue-500 animate-spin" />
             </div>
         )
     }
