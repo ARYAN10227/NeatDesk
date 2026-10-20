@@ -34,14 +34,12 @@ const TaskDetails = () => {
     };
 
     const fetchTaskDetails = async () => {
+        // the workspace may still be loading when this page is opened directly from a link
+        if (!currentWorkspace) return;
         setLoading(true);
-        if (!projectId || !taskId) return;
 
-        const proj = currentWorkspace.projects.find((p) => p.id === projectId);
-        if (!proj) return;
-
-        const tsk = proj.tasks.find((t) => t.id === taskId);
-        if (!tsk) return;
+        const proj = projectId && taskId ? currentWorkspace.projects?.find((p) => p.id === projectId) : null;
+        const tsk = proj?.tasks?.find((t) => t.id === taskId) || null;
 
         setTask(tsk);
         setProject(proj);
@@ -67,11 +65,10 @@ const TaskDetails = () => {
         } catch (error) {
             toast.dismissAll();
             toast.error(error?.response?.data?.message || error.message);
-            console.error(error);
         }
     };
 
-    useEffect(() => { fetchTaskDetails(); }, [taskId]);
+    useEffect(() => { fetchTaskDetails(); }, [taskId, projectId, currentWorkspace]);
 
     useEffect(() => {
         if (taskId && task) {
