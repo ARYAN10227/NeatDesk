@@ -12,7 +12,7 @@ const Layout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const { user, isLoaded } = useUser()
     const { organization } = useOrganization()
-    const { workspaces, loading } = useSelector((state) => state.workspace)
+    const { loading } = useSelector((state) => state.workspace)
     const { getToken } = useAuth()
     const dispatch = useDispatch()
 
