@@ -47,7 +47,7 @@ const workspaceSlice = createSlice({
             }
         },
         deleteWorkspace: (state, action) => {
-            state.workspaces = state.workspaces.filter((w) => w._id !== action.payload);
+            state.workspaces = state.workspaces.filter((w) => w.id !== action.payload);
         },
         addProject: (state, action) => {
             state.currentWorkspace.projects.push(action.payload);
@@ -59,7 +59,6 @@ const workspaceSlice = createSlice({
         addTask: (state, action) => {
 
             state.currentWorkspace.projects = state.currentWorkspace.projects.map((p) => {
-                console.log(p.id, action.payload.projectId, p.id === action.payload.projectId);
                 if (p.id === action.payload.projectId) {
                     p.tasks.push(action.payload);
                 }
@@ -104,11 +103,10 @@ const workspaceSlice = createSlice({
             // find workspace and project by id and delete task from it
             state.workspaces = state.workspaces.map((w) =>
                 w.id === state.currentWorkspace.id ? {
-                    ...w, projects: w.projects.map((p) =>
-                        p.id === action.payload.projectId ? {
-                            ...p, tasks: p.tasks.filter((t) => !action.payload.includes(t.id))
-                        } : p
-                    )
+                    // action.payload is an array of task ids, so filter every project
+                    ...w, projects: w.projects.map((p) => ({
+                        ...p, tasks: p.tasks.filter((t) => !action.payload.includes(t.id))
+                    }))
                 } : w
             );
         }
