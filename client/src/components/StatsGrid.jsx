@@ -1,8 +1,10 @@
 import { FolderOpen, CheckCircle, Users, AlertTriangle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
+import { useUser } from "@clerk/clerk-react";
 
 export default function StatsGrid() {
+    const { user } = useUser();
     const currentWorkspace = useSelector(
         (state) => state?.workspace?.currentWorkspace || null
     );
@@ -52,30 +54,21 @@ export default function StatsGrid() {
 
     useEffect(() => {
         if (currentWorkspace) {
+            const projects = currentWorkspace.projects || [];
+            const tasks = projects.flatMap((p) => p.tasks || []);
+            const now = new Date();
             setStats({
-                totalProjects: currentWorkspace.projects.length,
-                activeProjects: currentWorkspace.projects.filter(
+                totalProjects: projects.length,
+                activeProjects: projects.filter(
                     (p) => p.status !== "CANCELLED" && p.status !== "COMPLETED"
                 ).length,
-                completedProjects: currentWorkspace.projects
-                    .filter((p) => p.status === "COMPLETED")
-                    .reduce((acc, project) => acc + project.tasks.length, 0),
-                myTasks: currentWorkspace.projects.reduce(
-                    (acc, project) =>
-                        acc +
-                        project.tasks.filter(
-                            (t) => t.assignee?.email === currentWorkspace.owner.email
-                        ).length,
-                    0
-                ),
-                overdueIssues: currentWorkspace.projects.reduce(
-                    (acc, project) =>
-                        acc + project.tasks.filter((t) => t.due_date < new Date()).length,
-                    0
-                ),
+                completedProjects: projects.filter((p) => p.status === "COMPLETED").length,
+                myTasks: tasks.filter((t) => t.assignee?.id === user?.id).length,
+                // due_date arrives as an ISO string, so convert before comparing
+                overdueIssues: tasks.filter((t) => t.status !== "DONE" && t.due_date && new Date(t.due_date) < now).length,
             });
         }
-    }, [currentWorkspace]);
+    }, [currentWorkspace, user?.id]);
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 my-9">
