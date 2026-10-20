@@ -1,17 +1,20 @@
 {
-  "name": "server",
+  "name": "neatdesk-server",
   "version": "1.0.0",
-  "description": "",
+  "description": "NeatDesk REST API: Express, Prisma (Neon PostgreSQL), Clerk auth and Inngest background jobs",
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
-    "server": "nodemon server.js"
+    "server": "nodemon server.js",
+    "dev": "nodemon server.js",
+    "generate": "prisma generate",
+    "db:push": "prisma db push",
+    "check": "node --check server.js && for f in configs/*.js controllers/*.js routes/*.js middlewares/*.js inngest/*.js; do node --check $f || exit 1; done"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Aryan Raj",
+  "license": "MIT",
   "dependencies": {
     "@clerk/express": "^2.1.69",
     "@neondatabase/serverless": "^1.1.0",
