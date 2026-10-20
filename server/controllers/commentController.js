@@ -4,13 +4,21 @@ import prisma from "../configs/prisma.js";
 export const addComment = async (req, res) => {
     try {
         const { userId } = await req.auth();
-        const { content,taskId } = req.body;
+        const { content, taskId } = req.body;
+
+        if (!taskId || typeof content !== "string" || !content.trim()) {
+            return res.status(400).json({ message: "Comment content and taskId are required" });
+        }
 
         // check if user is projectmember
         const task = await prisma.task.findUnique({
             where: { id: taskId },
         });
-        
+
+        if (!task) {
+            return res.status(404).json({ message: "Task not found" });
+        }
+
         const project = await prisma.project.findUnique({
             where: { id: task.projectId },
             include: { members: { include: { user: true } } },
@@ -20,11 +28,11 @@ export const addComment = async (req, res) => {
             return res.status(404).json({ message: "Project not found" });
         }
         const member = project.members.find((member) => member.userId === userId);
-        if (!member) {
+        if (!member && project.team_lead !== userId) {
             return res.status(403).json({ message: "You are not member of this project" });
         }
 
-        const comment = await prisma.comment.create({ data: { taskId, content, userId }, include: { user: true } });
+        const comment = await prisma.comment.create({ data: { taskId, content: content.trim(), userId }, include: { user: true } });
         
         res.json({comment});
     } catch (error) {
@@ -36,8 +44,19 @@ export const addComment = async (req, res) => {
 // Get comments for task
 export const getTaskComments = async (req, res) => {
     try {
+        const { userId } = await req.auth();
         const { taskId } = req.params;
-        const comments = await prisma.comment.findMany({ where: { taskId }, include: { user: true } });
+
+        // only members of the task's workspace may read its comments
+        const task = await prisma.task.findFirst({
+            where: { id: taskId, project: { workspace: { members: { some: { userId } } } } },
+            select: { id: true },
+        });
+        if (!task) {
+            return res.status(404).json({ message: "Task not found" });
+        }
+
+        const comments = await prisma.comment.findMany({ where: { taskId }, include: { user: true }, orderBy: { createdAt: "asc" } });
         res.json({ comments });
     } catch (error) {
         console.log(error);
